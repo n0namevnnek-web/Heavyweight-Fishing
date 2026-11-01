@@ -77,7 +77,7 @@ Ophyn.new({
     Title = "NNVN HUB",
     Description = "Heavyweight Fishing Key System",
     Logo = "rbxassetid://138952058031836",
-    Theme = "Plant-Dark",
+    Theme = "Dark",
     Folder = "NNVN_HUB_KEY_SYSTEM",
 
     getkey = true,
