@@ -7,6 +7,13 @@
 
 local JNKIE_SCRIPT_DOWNLOAD_URL = "https://api.jnkie.com/api/v1/luascripts/public/65715a02f02d2e485e6f03b072080e1b68760de84457d777ae4d2405fda583d4/download"
 
+-- Never reuse an entitlement left behind by an earlier execution.
+getgenv().NNVN_JnkieValidated = false
+getgenv().NNVN_IsPremium = false
+getgenv().NNVN_IsPremiumAccess = false
+_G.NNVN_IsPremium = false
+_G.SCRIPT_IsPremium = false
+
 local function compileSource(source, chunkName)
     local chunk, compileError = loadstring(source, chunkName)
     if not chunk then
@@ -22,7 +29,11 @@ local function loadProtectedMainScript(key)
         return
     end
 
+    -- Ophyn invokes this callback only after Jnkie accepts the key.
     getgenv().SCRIPT_KEY = key
+    getgenv().NNVN_JnkieValidated = true
+    -- Premium is intentionally not decided in UI-Source. Jnkie injects
+    -- JD_IS_PREMIUM into Original Code according to the key's dashboard flag.
 
     local downloaded, source = pcall(function()
         return game:HttpGet(JNKIE_SCRIPT_DOWNLOAD_URL, true)
