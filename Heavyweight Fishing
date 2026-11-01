@@ -3,107 +3,104 @@
 
     Upload this file to the UI-Source field in your Jnkie Lua Script.
     Upload the actual NNVN HUB main script to the Original Code field.
-
-    Before uploading, replace JNKIE_SCRIPT_DOWNLOAD_URL below with the
-    public download URL generated for that Lua Script by Jnkie.
-]]
-
-local JNKIE_SCRIPT_DOWNLOAD_URL = "--[[
-    NNVN HUB - Ophyn UI Source for Jnkie
-
-    Upload this file to the UI-Source field in your Jnkie Lua Script.
-    Upload the actual NNVN HUB main script to the Original Code field.
-
-    Before uploading, replace JNKIE_SCRIPT_DOWNLOAD_URL below with the
-    public download URL generated for that Lua Script by Jnkie.
 ]]
 
 local JNKIE_SCRIPT_DOWNLOAD_URL = "https://api.jnkie.com/api/v1/luascripts/public/65715a02f02d2e485e6f03b072080e1b68760de84457d777ae4d2405fda583d4/download"
 
+local function compileSource(source, chunkName)
+    local chunk, compileError = loadstring(source, chunkName)
+    if not chunk then
+        warn("[NNVN HUB] Compile error: " .. tostring(compileError))
+        return nil
+    end
+    return chunk
+end
+
 local function loadProtectedMainScript(key)
     if type(key) ~= "string" or key == "" then
         warn("[NNVN HUB] Jnkie did not return a valid key.")
         return
     end
 
-    if JNKIE_SCRIPT_DOWNLOAD_URL == ""
-        or string.find(JNKIE_SCRIPT_DOWNLOAD_URL, "PASTE_YOUR_", 1, true) then
-        warn("[NNVN HUB] Configure JNKIE_SCRIPT_DOWNLOAD_URL before uploading UI-Source.")
-        return
-    end
-
-    -- Jnkie reads this value when the protected script download is requested.
     getgenv().SCRIPT_KEY = key
 
     local downloaded, source = pcall(function()
         return game:HttpGet(JNKIE_SCRIPT_DOWNLOAD_URL, true)
     end)
 
-    if not downloaded or type(source) ~= "string" or #source < 100 then
-        warn("[NNVN HUB] Failed to download Original Code: " .. tostring(source))
+    if not downloaded then
+        warn("[NNVN HUB] Jnkie download failed: " .. tostring(source))
         return
     end
 
-    local mainChunk, compileError = loadstring(source, "@NNVN_HUB_MAIN")
+    if type(source) ~= "string" or #source < 100 then
+        warn("[NNVN HUB] Jnkie returned an invalid response: " .. tostring(source))
+        return
+    end
+
+    local mainChunk = compileSource(source, "@NNVN_HUB_MAIN")
     if not mainChunk then
-        warn("[NNVN HUB] Original Code compile error: " .. tostring(compileError))
         return
     end
 
     local executed, runtimeError = xpcall(mainChunk, function(errorMessage)
-        return tostring(errorMessage)
+        return debug and debug.traceback and debug.traceback(tostring(errorMessage), 2)
+            or tostring(errorMessage)
     end)
 
     if not executed then
-        warn("[NNVN HUB] Original Code runtime error: " .. tostring(runtimeError))
+        warn("[NNVN HUB] Main script runtime error: " .. tostring(runtimeError))
     end
 end
 
-local loaded, Ophyn = pcall(function()
-    return loadstring(game:HttpGet("https://ophyn.space/interface", true))()
+local interfaceDownloaded, interfaceSource = pcall(function()
+    return game:HttpGet("https://ophyn.space/interface", true)
 end)
 
-if not loaded or not Ophyn then
-    warn("[NNVN HUB] Failed to load Ophyn UI: " .. tostring(Ophyn))
+if not interfaceDownloaded then
+    warn("[NNVN HUB] Ophyn download failed: " .. tostring(interfaceSource))
+    return
+end
+
+local interfaceChunk = compileSource(interfaceSource, "@OPHYN_INTERFACE")
+if not interfaceChunk then
+    return
+end
+
+local interfaceLoaded, Ophyn = pcall(interfaceChunk)
+if not interfaceLoaded or type(Ophyn) ~= "table" then
+    warn("[NNVN HUB] Ophyn initialization failed: " .. tostring(Ophyn))
     return
 end
 
 Ophyn.new({
-    -- Window
     Title = "NNVN HUB",
     Description = "Heavyweight Fishing Key System",
     Logo = "rbxassetid://138952058031836",
     Theme = "Plant-Dark",
     Folder = "NNVN_HUB_KEY_SYSTEM",
 
-    -- Buttons
     getkey = true,
 
-    -- Intro
     Intro = "true",
     startintro_size = 80,
     squareintro_time = 1.2,
 
-    -- Appearance
     Changelogocolor = true,
     Changeiconscolor = true,
     ChangeTheme = true,
     NotifStyle = "1",
     TabsStyle = "1",
 
-    -- Links
     discord_link = "discord.gg/n4DbXTyNPj",
 
-    -- Cards
     Discord = "true",
     Website = "false",
 
-    -- Supported Games
     SupportedGames = {
         [98502499119821] = true,
     },
 
-    -- Jnkie Key System
     KeySystem = {
         SaveKey = true,
         API = {
@@ -116,110 +113,6 @@ Ophyn.new({
         },
     },
 
-    -- Called only after Jnkie validates the entered or saved key.
-    Callback = function(key)
-        loadProtectedMainScript(key)
-    end,
-})
-"
-
-local function loadProtectedMainScript(key)
-    if type(key) ~= "string" or key == "" then
-        warn("[NNVN HUB] Jnkie did not return a valid key.")
-        return
-    end
-
-    if JNKIE_SCRIPT_DOWNLOAD_URL == ""
-        or string.find(JNKIE_SCRIPT_DOWNLOAD_URL, "PASTE_YOUR_", 1, true) then
-        warn("[NNVN HUB] Configure JNKIE_SCRIPT_DOWNLOAD_URL before uploading UI-Source.")
-        return
-    end
-
-    -- Jnkie reads this value when the protected script download is requested.
-    getgenv().SCRIPT_KEY = key
-
-    local downloaded, source = pcall(function()
-        return game:HttpGet(JNKIE_SCRIPT_DOWNLOAD_URL, true)
-    end)
-
-    if not downloaded or type(source) ~= "string" or #source < 100 then
-        warn("[NNVN HUB] Failed to download Original Code: " .. tostring(source))
-        return
-    end
-
-    local mainChunk, compileError = loadstring(source, "@NNVN_HUB_MAIN")
-    if not mainChunk then
-        warn("[NNVN HUB] Original Code compile error: " .. tostring(compileError))
-        return
-    end
-
-    local executed, runtimeError = xpcall(mainChunk, function(errorMessage)
-        return tostring(errorMessage)
-    end)
-
-    if not executed then
-        warn("[NNVN HUB] Original Code runtime error: " .. tostring(runtimeError))
-    end
-end
-
-local loaded, Ophyn = pcall(function()
-    return loadstring(game:HttpGet("https://ophyn.space/interface", true))()
-end)
-
-if not loaded or not Ophyn then
-    warn("[NNVN HUB] Failed to load Ophyn UI: " .. tostring(Ophyn))
-    return
-end
-
-Ophyn.new({
-    -- Window
-    Title = "NNVN HUB",
-    Description = "Heavyweight Fishing Key System",
-    Logo = "rbxassetid://138952058031836",
-    Theme = "Plant-Dark",
-    Folder = "NNVN_HUB_KEY_SYSTEM",
-
-    -- Buttons
-    getkey = true,
-
-    -- Intro
-    Intro = "true",
-    startintro_size = 80,
-    squareintro_time = 1.2,
-
-    -- Appearance
-    Changelogocolor = true,
-    Changeiconscolor = true,
-    ChangeTheme = true,
-    NotifStyle = "1",
-    TabsStyle = "1",
-
-    -- Links
-    discord_link = "discord.gg/n4DbXTyNPj",
-
-    -- Cards
-    Discord = "true",
-    Website = "false",
-
-    -- Supported Games
-    SupportedGames = {
-        [98502499119821] = true,
-    },
-
-    -- Jnkie Key System
-    KeySystem = {
-        SaveKey = true,
-        API = {
-            {
-                Type = "jnkie",
-                Service = "NNVN Hub",
-                Identifier = "1168483",
-                Provider = "NNVN Hub",
-            },
-        },
-    },
-
-    -- Called only after Jnkie validates the entered or saved key.
     Callback = function(key)
         loadProtectedMainScript(key)
     end,
